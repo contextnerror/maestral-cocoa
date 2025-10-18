@@ -86,18 +86,7 @@ class MaestralGui(SystemTrayApp):
     RESUME_TEXT = "Resume Syncing"
     START_TEXT = "Start Syncing"
 
-    icon_mapping = {
-        IDLE: Icon(resource_path("systray-idle.pdf")),
-        CONNECTED: Icon(resource_path("systray-idle.pdf")),
-        SYNCING: Icon(resource_path("systray-syncing.pdf")),
-        PAUSED: Icon(resource_path("systray-paused.pdf")),
-        CONNECTING: Icon(resource_path("systray-disconnected.pdf")),
-        SYNC_ERROR: Icon(resource_path("systray-info.pdf")),
-        ERROR: Icon(resource_path("systray-error.pdf")),
-    }
-
-    def __init__(self, config_name: str = "maestral") -> None:
-        self.config_name = config_name
+    def __init__(self, config_name: str, start_result: Start) -> None:
         super().__init__(
             formal_name=APP_NAME,
             app_id=BUNDLE_ID,
@@ -107,6 +96,17 @@ class MaestralGui(SystemTrayApp):
             version=__gui_version__,
             home_page=__url__,
         )
+        self._start_result = start_result
+        self.config_name = config_name
+        self.icon_mapping = {
+            IDLE: Icon(resource_path("systray-idle.pdf")),
+            CONNECTED: Icon(resource_path("systray-idle.pdf")),
+            SYNCING: Icon(resource_path("systray-syncing.pdf")),
+            PAUSED: Icon(resource_path("systray-paused.pdf")),
+            CONNECTING: Icon(resource_path("systray-disconnected.pdf")),
+            SYNC_ERROR: Icon(resource_path("systray-info.pdf")),
+            ERROR: Icon(resource_path("systray-error.pdf")),
+        }
 
     def startup(self) -> None:
         self._started = False
