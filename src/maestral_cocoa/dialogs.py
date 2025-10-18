@@ -57,7 +57,7 @@ class Dialog(Window):
         message: str = "",
         button_labels: Iterable[str] = ("Ok",),
         default: str = "Ok",
-        accessory_view: toga.Widget = toga.Box(),
+        accessory_view: toga.Widget | None = None,
         icon: toga.Icon | None = None,
         callback: Callable | None = None,
     ):
@@ -126,7 +126,7 @@ class Dialog(Window):
         )
         self.dialog_buttons.children.insert(0, self.spinner)
 
-        self.accessory_view = accessory_view
+        self.accessory_view = accessory_view or toga.Box()
 
         self.content_box = toga.Box(
             children=[

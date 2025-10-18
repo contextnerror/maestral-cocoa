@@ -86,18 +86,7 @@ class MaestralGui(SystemTrayApp):
     RESUME_TEXT = "Resume Syncing"
     START_TEXT = "Start Syncing"
 
-    icon_mapping = {
-        IDLE: Icon(resource_path("systray-idle.pdf")),
-        CONNECTED: Icon(resource_path("systray-idle.pdf")),
-        SYNCING: Icon(resource_path("systray-syncing.pdf")),
-        PAUSED: Icon(resource_path("systray-paused.pdf")),
-        CONNECTING: Icon(resource_path("systray-disconnected.pdf")),
-        SYNC_ERROR: Icon(resource_path("systray-info.pdf")),
-        ERROR: Icon(resource_path("systray-error.pdf")),
-    }
-
-    def __init__(self, config_name: str = "maestral") -> None:
-        self.config_name = config_name
+    def __init__(self, config_name: str, start_result: Start) -> None:
         super().__init__(
             formal_name=APP_NAME,
             app_id=BUNDLE_ID,
@@ -107,13 +96,23 @@ class MaestralGui(SystemTrayApp):
             version=__gui_version__,
             home_page=__url__,
         )
+        self._start_result = start_result
+        self.config_name = config_name
+        self.icon_mapping = {
+            IDLE: Icon(resource_path("systray-idle.pdf")),
+            CONNECTED: Icon(resource_path("systray-idle.pdf")),
+            SYNCING: Icon(resource_path("systray-syncing.pdf")),
+            PAUSED: Icon(resource_path("systray-paused.pdf")),
+            CONNECTING: Icon(resource_path("systray-disconnected.pdf")),
+            SYNC_ERROR: Icon(resource_path("systray-info.pdf")),
+            ERROR: Icon(resource_path("systray-error.pdf")),
+        }
 
     def startup(self) -> None:
-        self._started = False
         self._cached_status = CONNECTING
         self._linked_ui = False
 
-        self.mdbx = self.get_or_start_maestral_daemon()
+        self.mdbx = self.get_maestral_daemon()
 
         self.autostart = AutoStart(self.config_name)
         self.updater = AutoUpdater(self.mdbx, self)
@@ -163,10 +162,8 @@ class MaestralGui(SystemTrayApp):
         self._linked_ui = True
         await self.periodic_refresh_gui()
 
-    def get_or_start_maestral_daemon(self) -> MaestralProxy:
-        res = start_maestral_daemon_process(self.config_name)
-
-        if res == Start.Failed:
+    def get_maestral_daemon(self) -> MaestralProxy:
+        if self._start_result == Start.Failed:
             title = "Could not start Maestral"
             message = (
                 "Could not start or connect to sync daemon. Please try again "
@@ -177,10 +174,6 @@ class MaestralGui(SystemTrayApp):
             # super().exit() fails on toga-cocoa because the event loop has not yet been
             # started. Call sys.exit() instead.
             sys.exit(0)
-        elif res == Start.AlreadyRunning:
-            self._started = False
-        elif res == Start.Ok:
-            self._started = True
 
         return MaestralProxy(self.config_name)
 
@@ -217,7 +210,7 @@ class MaestralGui(SystemTrayApp):
             self.item_quit,
         )
 
-    def on_open_clicked(self, inerface=None, *args, **kwargs):
+    def on_open_clicked(self, interface=None, *args, **kwargs):
         click.launch(self.mdbx.dropbox_path)
 
     def setup_ui_linked(self) -> None:
@@ -262,10 +255,11 @@ class MaestralGui(SystemTrayApp):
             "Check for Updates...", action=self.updater.check_for_updates
         )
 
-        if self._started:
-            self.item_quit.label = "Quit Maestral"
-        else:
+        if self._start_result == Start.AlreadyRunning:
+            # Only quit the GUI but keep a previously started daemon running.
             self.item_quit.label = "Quit Maestral GUI"
+        else:
+            self.item_quit.label = "Quit Maestral"
 
         self.menu.insert(2, MenuItemSeparator())
         self.menu.insert(3, self.item_email)
@@ -484,7 +478,8 @@ class MaestralGui(SystemTrayApp):
         # Note: Keep this method synchronous for compatibility with the parent class.
 
         async def async_exit() -> None:
-            if self._started:
+            if self._start_result == Start.Ok:
+                # Stop the daemon only if we started it.
                 stop_maestral_daemon_process(self.config_name)
             super(MaestralGui, self).exit()
 
@@ -508,5 +503,6 @@ class MaestralGui(SystemTrayApp):
 
 
 def run(config_name: str = "maestral") -> None:
-    app = MaestralGui(config_name)
+    res = start_maestral_daemon_process(config_name)
+    app = MaestralGui(config_name, res)
     return app.main_loop()
