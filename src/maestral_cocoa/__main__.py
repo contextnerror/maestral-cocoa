@@ -20,7 +20,6 @@ def main():
     run(parsed_args.config_name)
 
 
-
 if __name__ == "__main__":
     freeze_support_cli()
     freeze_support_daemon()
