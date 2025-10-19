@@ -25,7 +25,6 @@ from maestral.constants import (
     BUNDLE_ID,
 )
 from maestral.daemon import (
-    start_maestral_daemon_process,
     stop_maestral_daemon_process,
     MaestralProxy,
     Start,
@@ -502,7 +501,6 @@ class MaestralGui(SystemTrayApp):
         await self.exit_and_stop_daemon()
 
 
-def run(config_name: str = "maestral") -> None:
-    res = start_maestral_daemon_process(config_name)
+def run(config_name: str, res: Start) -> None:
     app = MaestralGui(config_name, res)
     return app.main_loop()
