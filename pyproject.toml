@@ -6,7 +6,7 @@ url = "https://maestral.app"
 license.file = "LICENSE.txt"
 author = "Sam Schott"
 author_email = "sam.schott@outlook.com"
-template = "https://github.com/samschott/briefcase-macOS-Xcode-template.git"
+template = "https://github.com/contextnerror/briefcase-macOS-Xcode-template.git"
 template_branch = "maestral-v2"
 
 [tool.briefcase.app.maestral-cocoa]
